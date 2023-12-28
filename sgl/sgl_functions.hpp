@@ -160,6 +160,48 @@ namespace sgl {
 		
 		return output;
 	}
+
+    template <VertexAP Vertex, HasPushBack Container>
+    requires std::same_as<Vertex*, typename Container::value_type> &&
+             std::integral<typename Vertex::FlagType::DType>
+    void articulationPoints(Vertex& v, Container& container, typename Vertex::Flags::DType depth) {
+        size_t childCount = 0;
+        bool isArticulation = false;
+        v.flags.visit();
+        v.flags.dist = depth;
+        v.flags.low = depth;
+
+        for (auto it = v.vertexBegin(); it != v.vertexEnd(); ++it) {
+            if (!it->visited()) {
+                it->flags.prev = &v;
+                ++childCount;
+                articulationPoints(*it, container, depth + 1);
+                if (it->flags.low > v.flags.dist) {
+                    isArticulation = true;
+                }
+                v.flags.low = v.flags.low < it->flags.low ? v.flags.low : it->flags.low;
+            } else if (&(*it) != v.flags.prev) {
+                v.flags.low = v.flags.low < it->flags.depth ? v.flags.low : it->flags.depth;
+            }
+        }
+
+        if ((v.flags.prev != nullptr && isArticulation) || (v.flags.prev == nullptr && childCount > 1)) {
+            container.push_back(&v);
+        }
+    }
+
+    template <GraphAP Graph, HasPushBack Container>
+    requires std::same_as<typename Graph::VertexType*, typename Container::value_type> &&
+             std::integral<typename Graph::VertexType::FlagType::DType>
+    void graphArticulationPoints(Graph& graph, Container& container) {
+        for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
+            if (!it->flags.visited()) {
+                articulationPoints(*it, container, 0);
+            }
+        }
+
+        graph.reset();
+    }
 }
 
 #endif

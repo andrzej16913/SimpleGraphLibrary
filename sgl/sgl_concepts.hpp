@@ -63,7 +63,7 @@ namespace sgl {
     //std::same_as<Vertex, typename Vertex::iterator*> &&
     requires(Vertex v, Vertex& to) {
         typename Vertex::FlagType;
-        Vertex::DIRECTED;
+        //Vertex::DIRECTED;
 		{ v.vertexBegin() } -> std::same_as<typename Vertex::iterator>;
 		{ v.vertexEnd() } -> std::sentinel_for<typename Vertex::iterator>;
         v.addEdge(to);
@@ -83,11 +83,9 @@ namespace sgl {
     FlagID<typename Vertex::FlagType>;
 
     template <typename Vertex>
-    concept VertexDirected =
+    concept VertexAP =
     IsVertex<Vertex> &&
-    requires(Vertex v) {
-        Vertex::DIRECTED == true;
-    };
+    FlagAP<typename Vertex::FlagType>;
 	
 	template <typename Graph>
 	concept IsGraph =
@@ -111,6 +109,11 @@ namespace sgl {
     concept GraphID =
     IsGraph<Graph> &&
     VertexID<typename Graph::VertexType>;
+
+    template <typename Graph>
+    concept GraphAP =
+    IsGraph<Graph> &&
+    VertexAP<typename Graph::VertexType>;
 	
 	template <typename Graph>
 	concept GraphRandomlyAccessible =
@@ -118,6 +121,12 @@ namespace sgl {
 	requires(Graph g, size_t pos) {
 		g.operator[](pos);
 	};
+
+    template <typename Container>
+    concept HasPushBack =
+    requires(Container c) {
+        c.push_back();
+    };
 }
 
 #endif

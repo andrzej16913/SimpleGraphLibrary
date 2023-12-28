@@ -34,29 +34,6 @@ namespace sgl {
         void reset() { visited_ = false; id = 0; }
     };
 
-    template <IsVertex Vertex>
-    class APFlag {
-    private:
-        bool visited_ = false;
-    public:
-        using DType = size_t;
-        using LType = size_t;
-        DType dist;
-        LType low;
-        Vertex* prev;
-
-        APFlag() : visited_{false}, dist{0}, low{0}, prev{nullptr} {}
-
-        void visit() { visited_ = true; }
-        bool visited() const { return visited_; }
-        void reset() {
-            visited_ = false;
-            dist = 0;
-            low = 0;
-            prev = nullptr;
-        }
-    };
-
     /*template <IsVertex Vertex>
     class VertexIterator {
     public:
@@ -82,14 +59,14 @@ namespace sgl {
         typename Vertex::ContainerType::iterator it_;
     };*/
 
-    template <typename Data, IsFlag Flag>
+    template <typename Data, typename Flag>
     class VectorVertex {
     private:
         std::vector<VectorVertex<Data, Flag>*> vertices_;
     public:
         Flag flags;
         Data data;
-        static constexpr bool DIRECTED = false;
+        //static constexpr bool DIRECTED = false;
         using ThisType = VectorVertex<Data, Flag>;
         using ContainerType = std::vector<ThisType*>;
         using FlagType = Flag;
@@ -142,7 +119,6 @@ namespace sgl {
 
         void addEdge(ThisType& to) {
             vertices_.push_back(&to);
-            to.vertices_.push_back(this);
         }
 
         void reset() {
@@ -152,7 +128,7 @@ namespace sgl {
         iterator vertexBegin() { return iterator(vertices_.begin()); }
         iterator vertexEnd() { return iterator(vertices_.end()); }
     };
-
+/*
     template <typename Data, IsFlag Flag>
     class DirectedVectorVertex {
     private:
@@ -221,13 +197,13 @@ namespace sgl {
         iterator vertexBegin() { return iterator(vertices_.begin()); }
         iterator vertexEnd() { return iterator(vertices_.end()); }
     };
-	
-	template <IsVertex Vertex>
+*/
+	template <IsVertex Vertex, bool Directed>
 	class RandomAccessGraph {
 		public:
 		using iterator = typename std::deque<Vertex>::iterator;
 		typedef Vertex VertexType;
-        static constexpr bool DIRECTED = Vertex::DIRECTED;
+        static constexpr bool DIRECTED = Directed;
 		
 		RandomAccessGraph() : vertices_{} {}
         RandomAccessGraph(const RandomAccessGraph& g) : vertices_{} {
@@ -286,6 +262,29 @@ namespace sgl {
 		private:
 		std::deque<Vertex> vertices_;
 	};
+
+    template <typename Data>
+    class APFlag {
+    private:
+        bool visited_ = false;
+    public:
+        using DType = size_t;
+        using LType = DType;
+        DType dist;
+        LType low;
+        VectorVertex<Data, APFlag<Data>>* prev;
+
+        APFlag() : visited_{false}, dist{0}, low{0}, prev{nullptr} {}
+
+        void visit() { visited_ = true; }
+        bool visited() const { return visited_; }
+        void reset() {
+            visited_ = false;
+            dist = 0;
+            low = 0;
+            prev = nullptr;
+        }
+    };
 }
 
 #endif
