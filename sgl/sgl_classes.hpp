@@ -5,6 +5,7 @@
 #include <cstddef>
 #include <deque>
 #include <iterator>
+#include <limits>
 #include <utility>
 #include <vector>
 
@@ -59,6 +60,16 @@ namespace sgl {
     private:
         typename Vertex::ContainerType::iterator it_;
     };*/
+
+    template <typename Weight>
+    class WeightValue {
+    private:
+        Weight weight_;
+    public:
+        using WeightType = Weight;
+        explicit WeightValue(Weight weight) : weight_{weight} {}
+        WeightType weight() { return weight_; }
+    };
 
     template <typename IDT, typename Value>
     class Edge {
@@ -537,6 +548,14 @@ namespace sgl {
             dist = 0;
             low = 0;
             prev = nullptr;
+        }
+
+        static DType zeroDist() {
+            return 0;
+        }
+
+        static DType maxDist() {
+            return std::numeric_limits<DType>::max();
         }
     };
 }

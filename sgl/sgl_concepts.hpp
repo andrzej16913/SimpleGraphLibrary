@@ -33,6 +33,9 @@ namespace sgl {
     requires(Flag f) {
         typename Flag::DType;
         f.dist;
+        { Flag::zeroDist() } -> std::same_as<typename Flag::DType>;
+        { Flag::maxDist() } -> std::same_as<typename Flag::DType>;
+        { ++(f.dist) };
     };
 
     template <typename Flag>
@@ -67,6 +70,14 @@ namespace sgl {
         e.value;
     };
 
+    template <typename Edge>
+    concept EdgeWeight =
+    IsEdge<Edge> &&
+    requires(Edge e) {
+        typename Edge::ValueType::WeightType;
+        { e.value.weight() } -> std::same_as<typename Edge::VelueType::WeightType>;
+    };
+
 	template <typename Vertex>
 	concept IsVertex =
     std::forward_iterator<typename Vertex::VertexIterator> &&
@@ -98,12 +109,23 @@ namespace sgl {
     FlagAP<typename Vertex::FlagType>;
 
     template <typename Vertex>
+    concept VertexDist =
+    IsVertex<Vertex> &&
+    FlagDist<typename Vertex::FlagType>;
+
+    template <typename Vertex>
     concept VertexEdge =
     IsVertex<Vertex> &&
     IsEdge<typename Vertex::EdgeType> &&
+    std::forward_iterator<typename Vertex::EdgeIterator> &&
+    std::forward_iterator<typename Vertex::PairIterator> &&
+    std::same_as<typename Vertex::EdgeType, typename Vertex::EdgeIterator::value_type> &&
+    std::same_as<typename Vertex::PairType, std::pair<Vertex*, typename Vertex::EdgeType*> > &&
     requires(Vertex v) {
         { v.edgeBegin() } -> std::same_as<typename Vertex::EdgeIterator>;
         { v.edgeEnd() } -> std::sentinel_for<typename Vertex::EdgeIterator>;
+        { v.pairBegin() } -> std::same_as<typename Vertex::PairIterator>;
+        { v.pairEnd() } -> std::sentinel_for<typename Vertex::PairIterator>;
     };
 	
 	template <typename Graph>
@@ -133,6 +155,11 @@ namespace sgl {
     concept GraphAP =
     IsGraph<Graph> &&
     VertexAP<typename Graph::VertexType>;
+
+    template <typename Graph>
+    concept GraphDist =
+    IsGraph<Graph> &&
+    VertexDist<typename Graph::VertexType>;
 	
 	template <typename Graph>
 	concept GraphRandomlyAccessible =
@@ -154,6 +181,7 @@ namespace sgl {
     template <typename Graph>
     concept GraphEdge =
     IsGraph<Graph> &&
+    VertexEdge<typename Graph::VertexType> &&
     std::forward_iterator<typename Graph::EdgeIterator> &&
     std::same_as<typename Graph::EdgeType, typename Graph::EdgeIterator::value_type> &&
     std::same_as<typename Graph::VertexType::EdgeType, typename Graph::EdgeType> &&

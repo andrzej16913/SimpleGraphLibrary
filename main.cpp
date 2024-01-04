@@ -10,7 +10,8 @@ int main(int argc, char *argv[]) {
     using APV = sgl::VectorVertex<char, sgl::APFlag<char>>;
     using APG = sgl::RandomAccessGraph<APV, false>;
 
-    using EI = sgl::Edge<int, size_t>;
+    using WI = sgl::WeightValue<int>;
+    using EI = sgl::Edge<int, WI>;
     using VEV = sgl::VectorEdgeVertex<char, sgl::VisitIntIDFlag, EI>;
     using RAEG = sgl::RandomAccessEdgeGraph<VEV, EI, false>;
 
