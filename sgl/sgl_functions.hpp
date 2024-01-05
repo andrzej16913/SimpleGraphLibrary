@@ -4,6 +4,7 @@
 #include <concepts>
 #include <functional>
 #include <iterator>
+#include <queue>
 
 #include "sgl_concepts.hpp"
 #include "sgl_classes.hpp"
@@ -175,7 +176,7 @@ namespace sgl {
             if (!it->visited()) {
                 it->flags.prev = &v;
                 ++childCount;
-                articulationPoints(*it, container, depth + 1);
+                articulationPoints(*it, container, ++depth);
                 if (it->flags.low > v.flags.dist) {
                     isArticulation = true;
                 }
@@ -196,11 +197,90 @@ namespace sgl {
     void graphArticulationPoints(Graph& graph, Container& container) {
         for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
             if (!it->flags.visited()) {
-                articulationPoints(*it, container, 0);
+                articulationPoints(*it, container, Graph::VertexType::FlagType::zeroDist());
             }
         }
 
         graph.reset();
+    }
+
+    template <GraphEdge Graph>
+    requires GraphVisit<Graph> &&
+             GraphDist<Graph> &&
+             FlagPrev<typename Graph::VertexType::FlagType> &&
+             EdgeWeight<typename Graph::EdgeType>
+    void dijkstra(Graph& graph, typename Graph::VertexType& start) {
+        using Vertex = typename Graph::VertexType;
+        using Edge = typename Graph::EdgeType;
+
+        for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
+            it->flags.dist = Vertex::FlagType::maxDist();
+            it->flags.prev = nullptr;
+        }
+
+        start.flags.dist = Vertex::FalgType::zeroDist();
+        auto queue = std::priority_queue([](Vertex* a, Vertex* b) {
+            return a->flags.dist > b->flags.dist;
+            }, std::vector<Vertex*>());
+
+        for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
+            queue.push(&(*it));
+        }
+
+        while (!queue.empty()) {
+            Vertex* vert = queue.top();
+            queue.pop();
+            if (!vert->visited()) {
+                vert->visit();
+                for (auto neighbour = vert->pairBegin(); neighbour != vert->pairEnd(); ++neighbour) {
+                    Vertex& nv = *std::get<0>(*neighbour);
+                    Edge& ne = *std::get<1>(*neighbour);
+                    if (nv.flags.dist > vert->flags.dist + ne.values.weight()) {
+                        nv.flags.dist += vert->flags.dist + ne.values.weight();
+                        nv.flags.prev = vert;
+                        queue.push(&nv);
+                    }
+                }
+            }
+        }
+    }
+
+    template <GraphEdge Graph, HasPushBack Container>
+    requires std::same_as<typename Graph::EdgeType*, typename Container::value_type> &&
+             GraphVisit<Graph> &&
+             EdgeWeight<typename Graph::EdgeType>
+    void prim(Graph& graph, Container& container) {
+        using Vertex = typename Graph::VertexType;
+        using Edge = typename Graph::EdgeType;
+        using Pair = typename Vertex::PairType;
+
+        Vertex& v1 = graph.vertexBegin();
+        v1.visited();
+
+        auto queue = std::priority_queue([](Pair* a, Pair* b) {
+            return std::get<1>(*a)->value.weight() > std::get<1>(*b)->value.weight();
+        });
+
+        for (auto it = v1.pairBegin(); it != v1.pairEnd(); ++it) {
+            queue.push(&(*it));
+        }
+
+        while (!queue.emdpty()) {
+            Pair* pair = queue.top();
+            Vertex* vert = std::get<0>(*pair);
+            Edge* edge = std::get<1>(*pair);
+            queue.pop();
+
+            if (!vert->visited()) {
+                vert->visit();
+                container.push_back(edge);
+                for (auto it = vert->pairBegin(); it != vert->pairEnd(); ++it) {
+                    if (!std::get<0>(*it)->visited()) {
+                        queue.push(&(*it));
+                    }
+                }
+            }
+        }
     }
 }
 
