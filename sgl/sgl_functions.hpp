@@ -40,14 +40,14 @@ namespace sgl {
 	template <VertexVisit Vertex, typename PreorderCallable, typename PostorderCallable>
 	requires std::invocable<PreorderCallable, Vertex&> &&
 	         std::invocable<PostorderCallable, Vertex&>
-	void deepFirstSearchVertex(Vertex& vertex, PreorderCallable& preorderCallable,
-                               PostorderCallable& postorderCallable) {
+	void deepFirstSearchVertex(Vertex& vertex, const PreorderCallable& preorderCallable,
+                               const PostorderCallable& postorderCallable) {
 		
-		vertex.visit();
+		vertex.flags.visit();
 		std::invoke(preorderCallable, vertex);
 
         for (auto neighbor = vertex.vertexBegin(); neighbor != vertex.vertexEnd(); ++neighbor) {
-            if (!neighbor->visited()) {
+            if (!neighbor->flags.visited()) {
                 deepFirstSearchVertex(*neighbor, preorderCallable, postorderCallable);
 			}
 		}
@@ -76,12 +76,12 @@ namespace sgl {
     }
 
     template <GraphVisit Graph, typename PreorderCallable, typename PostorderCallable>
-	requires std::invocable<PreorderCallable, typename Graph::vertexType&> &&
-	         std::invocable<PostorderCallable, typename Graph::vertexType&>
-	void deepFirstSearch(Graph& graph, PreorderCallable& preorderCallable,
-                         PostorderCallable& postorderCallable) {
+	requires std::invocable<PreorderCallable, typename Graph::VertexType&> &&
+	         std::invocable<PostorderCallable, typename Graph::VertexType&>
+	void deepFirstSearch(Graph& graph, const PreorderCallable& preorderCallable,
+                         const PostorderCallable& postorderCallable) {
         for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
-            if (!it->visited()) {
+            if (!it->flags.visited()) {
                 deepFirstSearchVertex(*it, preorderCallable, postorderCallable);
 			}
 		}
@@ -116,15 +116,17 @@ namespace sgl {
 	}
 	*/
 
-    template <GraphID InputGraph, GraphRandomlyAccessible OutputGraph>
-    requires std::same_as<typename  InputGraph::VertexType, typename OutputGraph::VertexType>
+    template <GraphID InputGraph, GraphDirected OutputGraph>
+    requires std::same_as<typename  InputGraph::VertexType, typename OutputGraph::VertexType> &&
+             GraphDirected<InputGraph>
     OutputGraph transponse(InputGraph& input) {
         OutputGraph output = {};
         output.addVertices(input.vertexBegin(), input.vertexEnd());
 
         for (auto from = input.vertexBegin(); from != input.vertexEnd(); ++from) {
             for (auto to = from->vertexBegin(); to != from->vertexEnd(); ++to) {
-                output[to->flags.id].addVertex(output[from->flags.id]);
+                //output[to->flags.id].addEdge(output[from->flags.id]);
+                output.addEdge(to->flags.id, from->flags.id);
             }
         }
 
@@ -132,30 +134,31 @@ namespace sgl {
     }
 	
 	template <GraphID InputGraph>
-	std::vector<std::vector<typename InputGraph::VertexType*>>
+	requires GraphDirected<InputGraph>
+	std::vector<std::vector<typename InputGraph::IDType>>
     stronglyConnectedComponents(InputGraph& graph) {
 		typedef typename InputGraph::VertexType Vertex;
 		typedef typename Vertex::FlagType::IDType IDType;
 
 		std::vector<IDType> indexes;
-		postorderDeepFristSearch(graph, [&indexes] (Vertex& v) {
+        deepFirstSearch(graph, [](Vertex& v) {}, [&indexes](Vertex& v) {
 			indexes.push_back(v.flags.id);
 		});
 
         graph.reset();
 		
-		RandomAccessGraph graphT = transponse(graph);
-        std::vector<std::vector<Vertex*>> output = {};
+		auto graphT = transponse<InputGraph, RandomAccessGraph<Vertex, InputGraph::DIRECTED>>(graph);
+        std::vector<std::vector<IDType>> output = {};
 		
 		for (auto it = rbegin(indexes); it != rend(indexes); ++it) {
 			Vertex* v = &graphT[*it];
-            output.emplace_back({});
-			std::vector<Vertex>& tree = output.back();
 
-			if (!v->visited()) {
-                preorderDeepFirstSearchVertex(*v, [&tree](Vertex& ve) {
-                    tree.push_back(&ve);
-                });
+			if (!v->flags.visited()) {
+                output.push_back(std::vector<IDType>());
+                std::vector<IDType>& tree = output.back();
+                deepFirstSearchVertex(*v, [&tree](Vertex& ve) {
+                    tree.push_back(ve.flags.id);
+                }, [](Vertex& v) {});
 			}
 		}
 		
@@ -176,7 +179,7 @@ namespace sgl {
             if (!it->visited()) {
                 it->flags.prev = &v;
                 ++childCount;
-                articulationPoints(*it, container, ++depth);
+                articulationPoints(*it, container, depth + 1);
                 if (it->flags.low > v.flags.dist) {
                     isArticulation = true;
                 }
@@ -219,7 +222,7 @@ namespace sgl {
         }
 
         start.flags.dist = Vertex::FalgType::zeroDist();
-        auto queue = std::priority_queue([](Vertex* a, Vertex* b) {
+        auto queue = std::priority_queue([](const Vertex* a, const Vertex* b) {
             return a->flags.dist > b->flags.dist;
             }, std::vector<Vertex*>());
 
@@ -257,7 +260,7 @@ namespace sgl {
         Vertex& v1 = graph.vertexBegin();
         v1.visited();
 
-        auto queue = std::priority_queue([](Pair* a, Pair* b) {
+        auto queue = std::priority_queue([](const Pair* a, const Pair* b) {
             return std::get<1>(*a)->value.weight() > std::get<1>(*b)->value.weight();
         });
 

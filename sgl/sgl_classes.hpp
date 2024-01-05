@@ -33,7 +33,7 @@ namespace sgl {
 
         void visit() { visited_ = true; }
         bool visited() const { return visited_; }
-        void reset() { visited_ = false; id = 0; }
+        void reset() { visited_ = false; }
     };
 
     /*template <IsVertex Vertex>
@@ -408,8 +408,8 @@ namespace sgl {
         }
 		
 		void reset() {
-			for (auto vertex: vertices_) {
-				vertex->reset();
+			for (Vertex& vertex: vertices_) {
+				vertex.reset();
 			}
 		}
 
@@ -510,8 +510,8 @@ namespace sgl {
         }
 
         void reset() {
-            for (auto vertex: vertices_) {
-                vertex->reset();
+            for (Vertex& vertex: vertices_) {
+                vertex.reset();
             }
         }
 
