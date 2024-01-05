@@ -168,7 +168,7 @@ namespace sgl {
     template <VertexAP Vertex, HasPushBack Container>
     requires std::same_as<Vertex*, typename Container::value_type> &&
              std::integral<typename Vertex::FlagType::DType>
-    void articulationPoints(Vertex& v, Container& container, typename Vertex::Flags::DType depth) {
+    void articulationPoints(Vertex& v, Container& container, typename Vertex::FlagType::DType depth) {
         size_t childCount = 0;
         bool isArticulation = false;
         v.flags.visit();
@@ -176,16 +176,16 @@ namespace sgl {
         v.flags.low = depth;
 
         for (auto it = v.vertexBegin(); it != v.vertexEnd(); ++it) {
-            if (!it->visited()) {
+            if (!it->flags.visited()) {
                 it->flags.prev = &v;
                 ++childCount;
                 articulationPoints(*it, container, depth + 1);
-                if (it->flags.low > v.flags.dist) {
+                if (it->flags.low >= v.flags.dist) {
                     isArticulation = true;
                 }
                 v.flags.low = v.flags.low < it->flags.low ? v.flags.low : it->flags.low;
             } else if (&(*it) != v.flags.prev) {
-                v.flags.low = v.flags.low < it->flags.depth ? v.flags.low : it->flags.depth;
+                v.flags.low = v.flags.low < it->flags.dist ? v.flags.low : it->flags.dist;
             }
         }
 

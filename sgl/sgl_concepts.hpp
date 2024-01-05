@@ -193,8 +193,8 @@ namespace sgl {
 
     template <typename Container>
     concept HasPushBack =
-    requires(Container c) {
-        c.push_back();
+    requires(Container c, typename Container::value_type v) {
+        c.push_back(v);
     };
 }
 

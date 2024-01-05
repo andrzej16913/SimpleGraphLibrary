@@ -83,5 +83,28 @@ int main(int argc, char *argv[]) {
 
     printResult(correctCount == 8);
 
+    correctCount = 0;
+    std::cout << "Test of articulationPoints()" << std::endl;
+    std::vector<std::pair<size_t, size_t>> apEdges = {
+            {0, 1}, {0, 4}, {1, 2}, {1, 5}, {2, 3}, {2, 6},
+            {2, 7}, {3, 7}, {5, 6}
+    };
+    std::vector<APV*> apResult = {};
+    std::vector<size_t> apCorrect = {2, 1, 0};
+
+    APG apg = {};
+    apg.addVertices(letters.begin(), letters.end());
+    apg.addEdges(apEdges.begin(), apEdges.end());
+
+    sgl::graphArticulationPoints(apg, apResult);
+
+    for (size_t i = 0; i < apResult.size(); ++i) {
+        if (apResult[i]->flags.id == apCorrect[i]) {
+            correctCount++;
+        }
+    }
+
+    printResult(correctCount == 3);
+
     return 0;
 }
