@@ -86,6 +86,44 @@ namespace sgl {
 			}
 		}
 	}
+
+    template <VertexVisit Vertex, typename PreorderCallable, typename PostorderCallable>
+    requires std::invocable<PreorderCallable, Vertex&> &&
+             std::invocable<PostorderCallable, Vertex&>
+    void breadthFirstSearchVertex(Vertex& vertex, const PreorderCallable& preorderCallable,
+                               const PostorderCallable& postorderCallable) {
+
+        std::queue<Vertex*> queue = {};
+
+        queue.push(&(*vertex));
+        while (!queue.empty()) {
+            Vertex* ptr = queue.front();
+            queue.pop();
+
+            ptr->flags.visit();
+            std::invoke(preorderCallable, *ptr);
+
+            for (auto it = ptr->vertexBegin(); it != ptr->vertexEnd(); ++it) {
+                if (!it->flags.visited()) {
+                    queue.push(&(*it));
+                }
+            }
+
+            std::invoke(postorderCallable, *ptr);
+        }
+    }
+
+    template <GraphVisit Graph, typename PreorderCallable, typename PostorderCallable>
+    requires std::invocable<PreorderCallable, typename Graph::VertexType&> &&
+             std::invocable<PostorderCallable, typename Graph::VertexType&>
+   void breadthFirstSearch(Graph& graph, const PreorderCallable& preorderCallable,
+                           const PostorderCallable& postorderCallable) {
+       for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
+           if (!it->flags.visited()) {
+               breadthFirstSearchVertex(*it, preorderCallable, postorderCallable);
+           }
+       }
+   }
 	/*
 	template <typename Graph, typename Vertex, typename Callable>
 	requires std::same_as<typename Graph::vertexType, Vertex> &&
@@ -284,6 +322,50 @@ namespace sgl {
                 }
             }
         }
+    }
+
+    template <EdgeWeight Weight, IsVertex Vertex, typename IDType>
+    void setMatrixPair(std::vector<std::vector<std::pair<Weight, Vertex*>>>& matrix, IDType from, IDType to,
+                       Weight weight, Vertex* vertex) {
+        std::get<0>(matrix[from][to]) = weight;
+        std::get<1>(matrix[from][to]) = vertex;
+    }
+
+    template <GraphEdge Graph>
+    requires GraphID<Graph> &&
+             GraphDirected<Graph> &&
+             GraphRandomlyAccessible<Graph> &&
+             EdgeWeight<typename Graph::EdgeType>
+    std::vector<std::vector<std::pair<typename Graph::EdgeType::ValueType::WeightType, typename Graph::VertexType*>>>
+    floydWarshall(Graph& graph) {
+        using Vertex = typename Graph::VertexType;
+        using Edge = typename Graph::EdgeType;
+        using Weight = typename Graph::EdgeType::ValueType::WeightType;
+        using IDType = typename Graph::IDType;
+
+        std::vector<std::vector<std::pair<Weight, Vertex*>>> matrix =
+                {graph.vertexCount(), {graph.vertexCount(), {Weight::ValueType::maxWeight(), nullptr}}};
+
+        for (auto it = graph.edgeBegin(); it != graph.edgeEnd(); ++it) {
+            setMatrixPair(matrix, it->from(), it->to(), it->value.weight, &graph[it->from()]);
+        }
+
+        for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
+            setMatrixPair(matrix, it->flags.id, it->flags.id, Weight::ValueType::zeroWeight(), &(*it));
+        }
+
+        for (size_t k = 0; k < graph.vertexCount(); ++k) {
+            for (IDType i = 0; i < graph.vertexCount(); ++i) {
+                for (IDType j = 0; j < graph.vertexCount(); ++j) {
+                    Weight detour = std::get<0>(matrix[i][k]) + std::get<0>(matrix[k][j]);
+                    if (std::get<0>(matrix[i][j]) > detour) {
+                        setMatrixPair(matrix, i, j, detour, std::get<1>(matrix[k][j]));
+                    }
+                }
+            }
+        }
+
+        return matrix;
     }
 }
 
