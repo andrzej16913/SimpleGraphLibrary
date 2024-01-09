@@ -35,7 +35,7 @@ namespace sgl {
         f.dist;
         { Flag::zeroDist() } -> std::same_as<typename Flag::DType>;
         { Flag::maxDist() } -> std::same_as<typename Flag::DType>;
-        { ++(f.dist) };
+        f.dist + 1;
     };
 
     template <typename Flag>
@@ -76,6 +76,8 @@ namespace sgl {
     requires(Edge e) {
         typename Edge::ValueType::WeightType;
         { e.value.weight() } -> std::same_as<typename Edge::VelueType::WeightType>;
+        { Edge::ValueType::zeroWeight() } -> std::same_as<typename Edge::VelueType::WeightType>;
+        { Edge::ValueType::maxWeight() } -> std::same_as<typename Edge::VelueType::WeightType>;
     };
 
 	template <typename Vertex>
@@ -139,6 +141,7 @@ namespace sgl {
 		g.addVertex(v);
         g.addVertices(i, e);
         g.reset();
+        { g.vertexCount() } -> std::convertible_to<size_t>;
 	};
 
     template <typename Graph>
@@ -149,7 +152,10 @@ namespace sgl {
     template <typename Graph>
     concept GraphID =
     IsGraph<Graph> &&
-    VertexID<typename Graph::VertexType>;
+    VertexID<typename Graph::VertexType> &&
+    requires () {
+        typename Graph::IDType;
+    };
 
     template <typename Graph>
     concept GraphAP =
@@ -189,6 +195,7 @@ namespace sgl {
         typename Graph::EdgeType;
         { g.edgeBegin() } -> std::same_as<typename Graph::EdgeIterator>;
         { g.edgeEnd() } -> std::sentinel_for<typename Graph::EdgeIterator>;
+        { g.edgeCount() } -> std::convertible_to<size_t>;
     };
 
     template <typename Container>

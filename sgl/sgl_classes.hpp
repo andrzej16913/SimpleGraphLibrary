@@ -69,6 +69,8 @@ namespace sgl {
         using WeightType = Weight;
         explicit WeightValue(Weight weight) : weight_{weight} {}
         WeightType weight() { return weight_; }
+        static WeightType zeroWeight() { return 0; }
+        static WeightType maxWeight() { return std::numeric_limits<WeightType>::max(); }
     };
 
     template <typename IDT, typename Value>
@@ -413,6 +415,10 @@ namespace sgl {
 			}
 		}
 
+        size_t vertexCount() {
+            return vertices_.size();
+        }
+
 		VertexIterator vertexBegin() { return vertices_.begin(); }
 		VertexIterator vertexEnd() { return vertices_.end(); }
 		
@@ -513,6 +519,14 @@ namespace sgl {
             for (Vertex& vertex: vertices_) {
                 vertex.reset();
             }
+        }
+
+        size_t vertexCount() {
+            return vertices_.size();
+        }
+
+        size_t edgeCount() {
+            return edges_.size();
         }
 
         VertexIterator vertexBegin() { return vertices_.begin(); }
