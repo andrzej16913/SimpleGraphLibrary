@@ -95,16 +95,18 @@ namespace sgl {
 
         std::queue<Vertex*> queue = {};
 
-        queue.push(&(*vertex));
+        queue.push(&vertex);
+        vertex.flags.visit();
+
         while (!queue.empty()) {
             Vertex* ptr = queue.front();
             queue.pop();
 
-            ptr->flags.visit();
             std::invoke(preorderCallable, *ptr);
 
             for (auto it = ptr->vertexBegin(); it != ptr->vertexEnd(); ++it) {
                 if (!it->flags.visited()) {
+                    it->flags.visit();
                     queue.push(&(*it));
                 }
             }
@@ -339,7 +341,6 @@ namespace sgl {
     std::vector<std::vector<std::pair<typename Graph::EdgeType::ValueType::WeightType, typename Graph::VertexType*>>>
     floydWarshall(Graph& graph) {
         using Vertex = typename Graph::VertexType;
-        using Edge = typename Graph::EdgeType;
         using Weight = typename Graph::EdgeType::ValueType::WeightType;
         using IDType = typename Graph::IDType;
 
@@ -366,6 +367,53 @@ namespace sgl {
         }
 
         return matrix;
+    }
+
+    template <GraphEdge Graph, IsVertex Vertex, typename Flow>
+    requires EdgeFlow<typename Graph::EdgeType> &&
+             GraphDirected<Graph> &&
+             GraphID<Graph> &&
+             std::same_as<typename Graph::VertexType, Vertex> &&
+             std::same_as<typename Graph::EdgeType::ValueType::FlowType, Flow>
+    Flow edmondsKarp(Graph& graph, Vertex& source, Vertex& target) {
+        using Edge = typename Graph::EdgeType;
+        Flow flow = Edge::ValueType::zeroFlow();
+
+        while (true) {
+            std::queue<Vertex *> queue = {};
+            queue.push(&source);
+            std::vector<Edge *> pred = {graph.vertexCount(), nullptr};
+
+            while (!queue.empty() && pred[target.flags.id]) {
+                Vertex *ptr = queue.front();
+                queue.pop();
+
+                for (auto it = ptr->pairBegin(); it != ptr->pairEnd(); ++it) {
+                    Vertex &nv = *std::get<0>(*it);
+                    Edge &ne = *std::get<1>(*it);
+                    if (pred[nv.flags.id] == nullptr && &nv != &source && ne.values.capacity() > ne.values.flow()) {
+                        pred[nv.flags.id] = &ne;
+                        queue.push(&nv);
+                    }
+                }
+            }
+
+            Flow df = Edge::ValueType::maxFlow();
+            if (pred[target.flags.id] != nullptr) {
+                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from]) {
+                    df = std::min(df, e->value.capacity() - e->value.flow());
+                }
+                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from]) {
+                    e->value.flow(e->value.flow() + df);
+                    e->reverse->value.flow(e->value.flow() - df);
+                }
+                flow += df;
+            } else {
+                break;
+            }
+        }
+
+        return flow;
     }
 }
 

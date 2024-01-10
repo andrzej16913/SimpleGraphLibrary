@@ -80,6 +80,19 @@ namespace sgl {
         { Edge::ValueType::maxWeight() } -> std::same_as<typename Edge::VelueType::WeightType>;
     };
 
+    template <typename Edge>
+    concept EdgeFlow =
+    IsEdge<Edge> &&
+    requires(Edge e, typename Edge::ValueType::FlowType f) {
+        typename Edge::ValueType::FlowType;
+        { e.value.capacity() } -> std::same_as<typename Edge::ValueType::FlowType>;
+        { e.value.flow() } -> std::same_as<typename Edge::ValueType::FlowType>;
+        { e.value.flow(f) };
+        { e.value.reverse() } -> std::same_as<Edge*>;
+        { Edge::ValueType::zeroFlow() } -> std::same_as<typename Edge::ValueType::FlowType>;
+        { Edge::ValueType::maxFlow() } -> std::same_as<typename Edge::ValueType::FlowType>;
+    };
+
 	template <typename Vertex>
 	concept IsVertex =
     std::forward_iterator<typename Vertex::VertexIterator> &&

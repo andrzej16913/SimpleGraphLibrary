@@ -90,6 +90,38 @@ namespace sgl {
         IDType to() { return to_; }
     };
 
+    template <typename IDT, typename Flow>
+    class ValueFlow {
+    private:
+        Edge<IDT, ValueFlow>* reverse_;
+        Flow capacity_;
+        Flow flow_;
+    public:
+        using FlowType = Flow;
+        using EdgeType = Edge<IDT, ValueFlow>;
+
+        explicit ValueFlow(Flow capacity) : reverse_{nullptr}, capacity_{capacity}, flow_{zeroFlow()} {}
+
+        Flow capacity() { return capacity_; }
+        Flow flow() { return flow_; }
+        void flow(Flow flow) { flow_ = flow; }
+        EdgeType* reverse() { return reverse_; }
+
+        static Flow zeroFlow() { return 0; }
+        static Flow maxFlow() { return std::numeric_limits<FlowType>::max(); }
+
+        friend std::pair<EdgeType, EdgeType> makeFlows(IDT from, IDT to, Flow capacity);
+    };
+
+    template <typename IDT, typename Flow>
+    std::pair<Edge<IDT, ValueFlow<IDT, Flow>>, Edge<IDT, ValueFlow<IDT, Flow>>> makeFlows(IDT from, IDT to, Flow capacity) {
+        std::pair<Edge<IDT, ValueFlow<IDT, Flow>>, Edge<IDT, ValueFlow<IDT, Flow>>> pair =
+                {{from, to, {capacity}}, {to, from, {ValueFlow<IDT, Flow>::zeroFlow()}}};
+        std::get<0>(pair).value.reverse_ = std::get<1>(pair);
+        std::get<1>(pair).value.reverse_ = std::get<0>(pair);
+        return pair;
+    }
+
     template <typename Data, typename Flag>
     class VectorVertex {
     private:
