@@ -10,33 +10,6 @@
 #include "sgl_classes.hpp"
 
 namespace sgl {
-	template <VertexVisit Vertex, typename Callable>
-	requires std::invocable<Callable, Vertex&>
-	void preorderDeepFirstSearchVertex(Vertex& vertex, Callable& callable) {
-		vertex.visit();
-		std::invoke(callable, vertex);
-		
-		for (auto neighbor = vertex.vertexBegin(); neighbor != vertex.vertexEnd(); ++neighbor) {
-			if (!neighbor->visited()) {
-                preorderDeepFirstSearchVertex(*neighbor, callable);
-			}
-		}
-	}
-
-    template <VertexVisit Vertex, typename Callable>
-    requires std::invocable<Callable, Vertex&>
-	void postorderDeepFirstSearchVertex(Vertex& vertex, Callable& callable) {
-		vertex.visit();
-
-        for (auto neighbor = vertex.vertexBegin(); neighbor != vertex.vertexEnd(); ++neighbor) {
-            if (!neighbor->visited()) {
-                postorderDeepFirstSearchVertex(*neighbor, callable);
-			}
-		}
-		
-		std::invoke(callable, vertex);
-	}
-	
 	template <VertexVisit Vertex, typename PreorderCallable, typename PostorderCallable>
 	requires std::invocable<PreorderCallable, Vertex&> &&
 	         std::invocable<PostorderCallable, Vertex&>
@@ -54,26 +27,6 @@ namespace sgl {
 		
 		std::invoke(postorderCallable, vertex);
 	}
-	
-	template <GraphVisit Graph, typename Callable>
-	requires std::invocable<Callable, typename Graph::vertexType&>
-	void preorderDeepFirstSearch(Graph& graph, Callable& callable) {
-		for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
-			if (!it->visited()) {
-                preorderDeepFirstSearchVertex(*it, callable);
-			}
-		}
-	}
-
-    template<GraphVisit Graph, typename Callable>
-    requires std::invocable<Callable, typename Graph::vertexType &>
-    void postorderDeepFirstSearch(Graph & graph, Callable & callable) {
-        for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
-            if (!it->visited()) {
-                postorderDeepFirstSearchVertex(*it, callable);
-            }
-        }
-    }
 
     template <GraphVisit Graph, typename PreorderCallable, typename PostorderCallable>
 	requires std::invocable<PreorderCallable, typename Graph::VertexType&> &&
@@ -126,35 +79,6 @@ namespace sgl {
            }
        }
    }
-	/*
-	template <typename Graph, typename Vertex, typename Callable>
-	requires std::same_as<typename Graph::vertexType, Vertex> &&
-		std::invocable<Callable, Vertex&>
-	void dfs(Graph& graph, Callable callable) {
-		std::stack<Vertex*> stack;
-		
-		for (auto vertex: graph) {
-			std::cerr << "err: " << vertex->getData() << std::endl;
-			if (!vertex->visited()) {
-				stack.push(vertex);
-				
-				while (!stack.empty()) {
-					auto v = stack.top();
-					stack.pop();
-					
-					v->visit();
-					//callable(v);
-					std::invoke(callable, *v);
-					
-					for (auto v_neighbor: *v) {
-						if (!v_neighbor->visited())
-							stack.push(v_neighbor);
-					}
-				}
-			}
-		}
-	}
-	*/
 
     template <GraphID InputGraph, GraphDirected OutputGraph>
     requires std::same_as<typename  InputGraph::VertexType, typename OutputGraph::VertexType> &&
@@ -165,7 +89,6 @@ namespace sgl {
 
         for (auto from = input.vertexBegin(); from != input.vertexEnd(); ++from) {
             for (auto to = from->vertexBegin(); to != from->vertexEnd(); ++to) {
-                //output[to->flags.id].addEdge(output[from->flags.id]);
                 output.addEdge(to->flags.id, from->flags.id);
             }
         }

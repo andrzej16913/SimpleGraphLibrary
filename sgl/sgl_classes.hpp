@@ -36,31 +36,6 @@ namespace sgl {
         void reset() { visited_ = false; }
     };
 
-    /*template <IsVertex Vertex>
-    class VertexIterator {
-    public:
-        using iterator_category = std::forward_iterator_tag;
-        using difference_type   = std::ptrdiff_t;
-        using value_type        = Vertex;
-        using pointer           = value_type*;
-        using reference         = value_type&;
-
-        VertexIterator () : it_{} {}
-        explicit VertexIterator(typename Vertex::ContainerType::iterator it) : it_(it) {}
-
-        reference operator*() const { return *(*it_); }
-        pointer operator->() { return *it_; }
-
-        VertexIterator& operator++() { it_++; return *this; }
-
-        VertexIterator operator++(int) { VertexIterator tmp = *this; ++(*this); return tmp; }
-
-        friend bool operator== (const VertexIterator& a, const VertexIterator& b) { return a.it_ == b.it_; };
-        friend bool operator!= (const VertexIterator& a, const VertexIterator& b) { return a.it_ != b.it_; };
-    private:
-        typename Vertex::ContainerType::iterator it_;
-    };*/
-
     template <typename Weight>
     class WeightValue {
     private:
@@ -129,7 +104,6 @@ namespace sgl {
     public:
         Flag flags;
         Data data;
-        //static constexpr bool DIRECTED = false;
         using ThisType = VectorVertex<Data, Flag>;
         using ContainerType = std::vector<ThisType*>;
         using FlagType = Flag;
@@ -295,76 +269,7 @@ namespace sgl {
         PairIterator pairBegin() { return vertices_.begin(); }
         PairIterator pairEnd() { return vertices_.end(); }
     };
-/*
-    template <typename Data, IsFlag Flag>
-    class DirectedVectorVertex {
-    private:
-        std::vector<DirectedVectorVertex<Data, Flag>*> vertices_;
-    public:
-        Flag flags;
-        Data data;
-        static constexpr bool DIRECTED = true;
-        using ThisType = DirectedVectorVertex<Data, Flag>;
-        using ContainerType = std::vector<ThisType*>;
-        using FlagType = Flag;
-        class iterator {
-        public:
-            using iterator_category = std::forward_iterator_tag;
-            using difference_type   = std::ptrdiff_t;
-            using value_type        = DirectedVectorVertex<Data, Flag>;
-            using pointer           = value_type*;
-            using reference         = value_type&;
 
-            iterator () : it_{} {}
-            explicit iterator(typename ContainerType::iterator it) : it_(it) {}
-
-            reference operator*() const { return *(*it_); }
-            pointer operator->() { return *it_; }
-
-            iterator& operator++() { it_++; return *this; }
-
-            iterator operator++(int) { iterator tmp = *this; ++(*this); return tmp; }
-
-            friend bool operator== (const iterator& a, const iterator& b) { return a.it_ == b.it_; };
-            friend bool operator!= (const iterator& a, const iterator& b) { return a.it_ != b.it_; };
-        private:
-            typename ContainerType::iterator it_;
-        };
-
-        DirectedVectorVertex() : vertices_{}, flags{}, data{} {}
-        explicit DirectedVectorVertex(const Data& d) : vertices_{}, flags{}, data(d) {}
-        DirectedVectorVertex(const DirectedVectorVertex& v) : vertices_{}, flags(v.flags), data(v.data) {}
-        DirectedVectorVertex(DirectedVectorVertex&& v)  noexcept = default;
-
-        template <typename... Args>
-        requires std::constructible_from<Data, Args...>
-        explicit DirectedVectorVertex(Args&&... args) : vertices_{},flags{}, data{args...} {}
-
-        DirectedVectorVertex& operator=(const DirectedVectorVertex& v) {
-            if (this == &v)
-                return *this;
-
-            vertices_ = {};
-            flags = v.flags;
-            data = v.data;
-
-            return *this;
-        }
-
-        DirectedVectorVertex& operator=(DirectedVectorVertex&& v)  noexcept = default;
-
-        void addEdge(ThisType& to) {
-            vertices_.push_back(&to);
-        }
-
-        void reset() {
-            flags.reset();
-        }
-
-        iterator vertexBegin() { return iterator(vertices_.begin()); }
-        iterator vertexEnd() { return iterator(vertices_.end()); }
-    };
-*/
 	template <VertexID Vertex, bool Directed>
 	requires std::convertible_to<typename Vertex::FlagType::IDType, size_t>
 	class RandomAccessGraph {
@@ -453,14 +358,7 @@ namespace sgl {
 
 		VertexIterator vertexBegin() { return vertices_.begin(); }
 		VertexIterator vertexEnd() { return vertices_.end(); }
-		
-		/*void print() {
-			for (size_t i = 0; i < vertices.size(); ++i) {
-				auto v = vertices[i];
-				std::cerr << "graph: " << v << ':' << v->getData() << std::endl;
-			}
-		}*/
-		
+
 		private:
 		std::deque<Vertex> vertices_;
 	};
