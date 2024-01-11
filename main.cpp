@@ -25,6 +25,9 @@ int main(int argc, char *argv[]) {
     using VEV = sgl::VectorEdgeVertex<char, sgl::VisitIntIDFlag, EI>;
     using RAEG = sgl::RandomAccessEdgeGraph<VEV, EI, false>;
 
+    using FV = sgl::ValueFlow<int, int>;
+    using FE = sgl::Edge<int, FV>;
+
     static_assert(sgl::VertexVisit<VV>);
     static_assert(sgl::VertexID<VV>);
     //static_assert(sgl::VertexDirected<DV>);
@@ -39,6 +42,8 @@ int main(int argc, char *argv[]) {
     static_assert(sgl::IsEdge<EI>);
     static_assert(sgl::VertexEdge<VEV>);
     static_assert(sgl::GraphEdge<RAEG>);
+
+    static_assert(sgl::EdgeFlow<FE>);
 
     std::cout << "Test of deepFirstSearch() with VectorVertex and RandomAccessGraph" << std::endl;
 
@@ -57,6 +62,19 @@ int main(int argc, char *argv[]) {
     sgl::deepFirstSearch(rag, [&lri, &correctCount](VV& v) {
         if (*lri == v.data) ++correctCount; ++lri;
         }, [](VV& v){});
+    printResult(correctCount == 8);
+
+    std::cout << "Test of breadthFirstSearch() with VectorVertex and RandomAccessGraph" << std::endl;
+
+    correctCount = 0;
+    std::vector<char> bfsLettersResult = {'a', 'b', 'c', 'e', 'd', 'f',  'g', 'h'};
+    rag.reset();
+    lri = bfsLettersResult.begin();
+
+    sgl::breadthFirstSearch(rag, [&lri, &correctCount](VV& v) {
+        if (*lri == v.data) ++correctCount; ++lri;
+    }, [](VV& v) {});
+
     printResult(correctCount == 8);
 
     correctCount = 0;
