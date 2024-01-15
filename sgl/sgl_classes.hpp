@@ -6,6 +6,7 @@
 #include <deque>
 #include <iterator>
 #include <limits>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -42,7 +43,7 @@ namespace sgl {
         Weight weight_;
     public:
         using WeightType = Weight;
-        explicit WeightValue(Weight weight) : weight_{weight} {}
+        WeightValue(const Weight& weight) : weight_{weight} {}
         WeightType weight() { return weight_; }
         static WeightType zeroWeight() { return 0; }
         static WeightType maxWeight() { return std::numeric_limits<WeightType>::max(); }
@@ -484,6 +485,39 @@ namespace sgl {
         VectorVertex<Data, APFlag<Data>>* prev;
 
         APFlag() : visited_{false}, dist{0}, low{0}, prev{nullptr} {}
+
+        void visit() { visited_ = true; }
+        bool visited() const { return visited_; }
+        void reset() {
+            visited_ = false;
+            dist = 0;
+            low = 0;
+            prev = nullptr;
+        }
+
+        static DType zeroDist() {
+            return 0;
+        }
+
+        static DType maxDist() {
+            return std::numeric_limits<DType>::max();
+        }
+    };
+
+    template <typename Data, typename Edge>
+    class APEFlag {
+    private:
+        bool visited_ = false;
+    public:
+        using DType = size_t;
+        using LType = DType;
+        using IDType = DType;
+        DType dist;
+        LType low;
+        IDType id;
+        VectorEdgeVertex<Data, APEFlag<Data, Edge>, Edge>* prev;
+
+        APEFlag() : visited_{false}, dist{0}, low{0}, prev{nullptr} {}
 
         void visit() { visited_ = true; }
         bool visited() const { return visited_; }

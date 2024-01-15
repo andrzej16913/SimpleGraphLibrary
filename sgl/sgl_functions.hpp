@@ -184,7 +184,7 @@ namespace sgl {
             it->flags.prev = nullptr;
         }
 
-        start.flags.dist = Vertex::FalgType::zeroDist();
+        start.flags.dist = Vertex::FlagType::zeroDist();
         auto queue = std::priority_queue([](const Vertex* a, const Vertex* b) {
             return a->flags.dist > b->flags.dist;
             }, std::vector<Vertex*>());
@@ -196,13 +196,13 @@ namespace sgl {
         while (!queue.empty()) {
             Vertex* vert = queue.top();
             queue.pop();
-            if (!vert->visited()) {
-                vert->visit();
+            if (!vert->flags.visited()) {
+                vert->flags.visit();
                 for (auto neighbour = vert->pairBegin(); neighbour != vert->pairEnd(); ++neighbour) {
                     Vertex& nv = *std::get<0>(*neighbour);
                     Edge& ne = *std::get<1>(*neighbour);
-                    if (nv.flags.dist > vert->flags.dist + ne.values.weight()) {
-                        nv.flags.dist += vert->flags.dist + ne.values.weight();
+                    if (nv.flags.dist > vert->flags.dist + ne.value.weight()) {
+                        nv.flags.dist = vert->flags.dist + ne.value.weight();
                         nv.flags.prev = vert;
                         queue.push(&nv);
                     }
@@ -220,28 +220,28 @@ namespace sgl {
         using Edge = typename Graph::EdgeType;
         using Pair = typename Vertex::PairType;
 
-        Vertex& v1 = graph.vertexBegin();
-        v1.visited();
+        Vertex& v1 = *graph.vertexBegin();
+        v1.flags.visit();
 
         auto queue = std::priority_queue([](const Pair* a, const Pair* b) {
             return std::get<1>(*a)->value.weight() > std::get<1>(*b)->value.weight();
-        });
+        }, std::vector<Pair*>());
 
         for (auto it = v1.pairBegin(); it != v1.pairEnd(); ++it) {
             queue.push(&(*it));
         }
 
-        while (!queue.emdpty()) {
+        while (!queue.empty()) {
             Pair* pair = queue.top();
             Vertex* vert = std::get<0>(*pair);
             Edge* edge = std::get<1>(*pair);
             queue.pop();
 
-            if (!vert->visited()) {
-                vert->visit();
+            if (!vert->flags.visited()) {
+                vert->flags.visit();
                 container.push_back(edge);
                 for (auto it = vert->pairBegin(); it != vert->pairEnd(); ++it) {
-                    if (!std::get<0>(*it)->visited()) {
+                    if (!std::get<0>(*it)->flags.visited()) {
                         queue.push(&(*it));
                     }
                 }

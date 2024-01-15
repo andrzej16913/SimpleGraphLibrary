@@ -22,8 +22,10 @@ int main(int argc, char *argv[]) {
 
     using WI = sgl::WeightValue<int>;
     using EI = sgl::Edge<int, WI>;
-    using VEV = sgl::VectorEdgeVertex<char, sgl::VisitIntIDFlag, EI>;
-    using RAEG = sgl::RandomAccessEdgeGraph<VEV, EI, false>;
+    using ES = sgl::Edge<size_t, WI>;
+    using VEV = sgl::VectorEdgeVertex<char, sgl::APEFlag<char, ES>, ES>;
+    using RAEG = sgl::RandomAccessEdgeGraph<VEV, ES, false>;
+    using DRAEG = sgl::RandomAccessEdgeGraph<VEV, ES, true>;
 
     using FV = sgl::ValueFlow<int, int>;
     using FE = sgl::Edge<int, FV>;
@@ -123,6 +125,60 @@ int main(int argc, char *argv[]) {
     }
 
     printResult(correctCount == 3);
+
+    std::cout << "Test of dijkstra()" << std::endl;
+    correctCount = 0;
+
+    std::vector<char> dijChars = {'s', 't', 'x', 'y', 'z'};
+    std::vector<std::tuple<int, int, WI>> dijTups = {
+            {0, 1, {10}}, {0, 3, {5}}, {1, 2, {1}}, {1, 3, {2}}, {2, 4, {4}},
+            {3, 1, {3}}, {3, 2, {9}}, {3, 4, {2}}, {4, 0, {7}}, {4, 2, {6}}
+    };
+    std::vector<int> dijCorrect = {0, 8, 9, 5, 7};
+    size_t i = 0;
+
+    DRAEG draeg = {};
+    draeg.addVertices(dijChars.begin(), dijChars.end());
+    draeg.addEdges(dijTups.begin(), dijTups.end());
+
+    sgl::dijkstra(draeg, *draeg.vertexBegin());
+
+    for (auto it = draeg.vertexBegin(); it != draeg.vertexEnd(); ++it) {
+        if (it->flags.dist == dijCorrect[i]) {
+            correctCount++;
+        }
+        ++i;
+    }
+
+    printResult(correctCount == 5);
+
+    std::cout << "Test of prim()" << std::endl;
+    correctCount = 0;
+    std::vector<char> primChars = {'a', 'b', 'c', 'd', 'e', 'f',  'g', 'h', 'i'};
+    std::vector<std::tuple<int, int, WI>> primTups = {
+            {0, 1, 4}, {0, 7,  8}, {1, 2,  8}, {1, 7, 11}, {2, 3, 7}, {2, 5, 4}, {2, 8, 2},
+            {3, 4, 9}, {3, 5, 14}, {4, 5, 10}, {5, 6,  2}, {6, 7, 1}, {6, 8, 6}, {7, 8, 7}
+    };
+    std::vector<ES*> primResult = {};
+    std::vector<std::pair<int, int>> primCorrect = {
+            {0, 1}, {0, 7}, {6, 7}, {5, 6}, {2, 5}, {2, 8}, {2, 3}, {3, 4}
+    };
+    auto primIt = primCorrect.begin();
+
+    RAEG raeg = {};
+    raeg.addVertices(primChars.begin(), primChars.end());
+    raeg.addEdges(primTups.begin(), primTups.end());
+
+    sgl::prim(raeg, primResult);
+
+    for (auto e: primResult) {
+        if (e->from() == std::get<0>(*primIt) && e->to() == std::get<1>(*primIt)) {
+            correctCount++;
+        }
+        ++primIt;
+    }
+
+    printResult(correctCount == 8);
 
     return 0;
 }

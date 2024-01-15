@@ -75,9 +75,9 @@ namespace sgl {
     IsEdge<Edge> &&
     requires(Edge e) {
         typename Edge::ValueType::WeightType;
-        { e.value.weight() } -> std::same_as<typename Edge::VelueType::WeightType>;
-        { Edge::ValueType::zeroWeight() } -> std::same_as<typename Edge::VelueType::WeightType>;
-        { Edge::ValueType::maxWeight() } -> std::same_as<typename Edge::VelueType::WeightType>;
+        { e.value.weight() } -> std::same_as<typename Edge::ValueType::WeightType>;
+        { Edge::ValueType::zeroWeight() } -> std::same_as<typename Edge::ValueType::WeightType>;
+        { Edge::ValueType::maxWeight() } -> std::same_as<typename Edge::ValueType::WeightType>;
     };
 
     template <typename Edge>
