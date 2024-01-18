@@ -59,7 +59,7 @@ namespace sgl {
         using IDType = IDT;
         using ValueType = Value;
         Edge(IDType from, IDType to, Value values) : from_{from}, to_{to}, value{values} {}
-        explicit Edge(std::tuple<IDType, IDType, ValueType> tuple) :
+        Edge(std::tuple<IDType, IDType, ValueType> tuple) :
             from_{std::get<0>(tuple)}, to_{std::get<1>(tuple)}, value{std::get<2>(tuple)} {}
 
         IDType from() { return from_; }
@@ -76,7 +76,7 @@ namespace sgl {
         using FlowType = Flow;
         using EdgeType = Edge<IDT, ValueFlow>;
 
-        explicit ValueFlow(Flow capacity) : reverse_{nullptr}, capacity_{capacity}, flow_{zeroFlow()} {}
+        ValueFlow(Flow capacity) : reverse_{nullptr}, capacity_{capacity}, flow_{zeroFlow()} {}
 
         Flow capacity() { return capacity_; }
         Flow flow() { return flow_; }
@@ -86,17 +86,26 @@ namespace sgl {
         static Flow zeroFlow() { return 0; }
         static Flow maxFlow() { return std::numeric_limits<FlowType>::max(); }
 
-        friend std::pair<EdgeType, EdgeType> makeFlows(IDT from, IDT to, Flow capacity);
+        template <GraphEdge Graph, std::forward_iterator Iterator, std::sentinel_for<Iterator> Sentinel>
+        requires GraphDirected<Graph> &&
+                 GraphRandomlyAccessible<Graph> &&
+                 std::same_as<typename Graph::EdgeType, EdgeType> &&
+                 std::same_as<std::tuple<IDT, IDT, Flow>, typename Iterator::value_type>
+        static void insertFlowEdges(Graph& graph, Iterator begin, Sentinel end) {
+            for (Iterator it = begin; it != end; ++it) {
+                std::tuple<IDT, IDT, Flow>& tuple = *it;
+                graph.addEdge(std::get<0>(tuple), std::get<1>(tuple), std::get<2>(tuple));
+                graph.addEdge(std::get<1>(tuple), std::get<0>(tuple), zeroFlow());
+            }
+            for (auto it = graph.edgeBegin(); it != graph.edgeEnd(); ++it) {
+                EdgeType& forward = *it;
+                ++it;
+                EdgeType& reverse = *it;
+                forward.value.reverse_ = &reverse;
+                reverse.value.reverse_ = &forward;
+            }
+        }
     };
-
-    template <typename IDT, typename Flow>
-    std::pair<Edge<IDT, ValueFlow<IDT, Flow>>, Edge<IDT, ValueFlow<IDT, Flow>>> makeFlows(IDT from, IDT to, Flow capacity) {
-        std::pair<Edge<IDT, ValueFlow<IDT, Flow>>, Edge<IDT, ValueFlow<IDT, Flow>>> pair =
-                {{from, to, {capacity}}, {to, from, {ValueFlow<IDT, Flow>::zeroFlow()}}};
-        std::get<0>(pair).value.reverse_ = std::get<1>(pair);
-        std::get<1>(pair).value.reverse_ = std::get<0>(pair);
-        return pair;
-    }
 
     template <typename Data, typename Flag>
     class VectorVertex {

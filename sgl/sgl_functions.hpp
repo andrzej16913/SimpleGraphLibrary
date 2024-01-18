@@ -249,7 +249,7 @@ namespace sgl {
         }
     }
 
-    template <EdgeWeight Weight, IsVertex Vertex, typename IDType>
+    template <typename Weight, IsVertex Vertex, typename IDType>
     void setMatrixPair(std::vector<std::vector<std::pair<Weight, Vertex*>>>& matrix, IDType from, IDType to,
                        Weight weight, Vertex* vertex) {
         std::get<0>(matrix[from][to]) = weight;
@@ -264,24 +264,31 @@ namespace sgl {
     std::vector<std::vector<std::pair<typename Graph::EdgeType::ValueType::WeightType, typename Graph::VertexType*>>>
     floydWarshall(Graph& graph) {
         using Vertex = typename Graph::VertexType;
+        using Edge   = typename Graph::EdgeType;
         using Weight = typename Graph::EdgeType::ValueType::WeightType;
         using IDType = typename Graph::IDType;
 
         std::vector<std::vector<std::pair<Weight, Vertex*>>> matrix =
-                {graph.vertexCount(), {graph.vertexCount(), {Weight::ValueType::maxWeight(), nullptr}}};
+                {graph.vertexCount(), {graph.vertexCount(), {Edge::ValueType::maxWeight(), nullptr}}};
 
         for (auto it = graph.edgeBegin(); it != graph.edgeEnd(); ++it) {
-            setMatrixPair(matrix, it->from(), it->to(), it->value.weight, &graph[it->from()]);
+            setMatrixPair(matrix, it->from(), it->to(), it->value.weight(), &graph[it->from()]);
         }
 
         for (auto it = graph.vertexBegin(); it != graph.vertexEnd(); ++it) {
-            setMatrixPair(matrix, it->flags.id, it->flags.id, Weight::ValueType::zeroWeight(), &(*it));
+            setMatrixPair(matrix, it->flags.id, it->flags.id, Edge::ValueType::zeroWeight(), &(*it));
         }
 
         for (size_t k = 0; k < graph.vertexCount(); ++k) {
             for (IDType i = 0; i < graph.vertexCount(); ++i) {
                 for (IDType j = 0; j < graph.vertexCount(); ++j) {
-                    Weight detour = std::get<0>(matrix[i][k]) + std::get<0>(matrix[k][j]);
+                    Weight detour;
+                    if (std::get<0>(matrix[i][k]) == Edge::ValueType::maxWeight() ||
+                        std::get<0>(matrix[k][j]) == Edge::ValueType::maxWeight()) {
+                        detour = Edge::ValueType::maxWeight();
+                    } else {
+                        detour = std::get<0>(matrix[i][k]) + std::get<0>(matrix[k][j]);
+                    }
                     if (std::get<0>(matrix[i][j]) > detour) {
                         setMatrixPair(matrix, i, j, detour, std::get<1>(matrix[k][j]));
                     }
@@ -307,15 +314,15 @@ namespace sgl {
             queue.push(&source);
             std::vector<Edge *> pred = {graph.vertexCount(), nullptr};
 
-            while (!queue.empty() && pred[target.flags.id]) {
+            while (!queue.empty() && pred[target.flags.id] == nullptr) {
                 Vertex *ptr = queue.front();
                 queue.pop();
 
                 for (auto it = ptr->pairBegin(); it != ptr->pairEnd(); ++it) {
                     Vertex &nv = *std::get<0>(*it);
                     Edge &ne = *std::get<1>(*it);
-                    if (pred[nv.flags.id] == nullptr && &nv != &source && ne.values.capacity() > ne.values.flow()) {
-                        pred[nv.flags.id] = &ne;
+                    if (pred[ne.to()] == nullptr && ne.to() != source.flags.id && ne.value.capacity() > ne.value.flow()) {
+                        pred[ne.to()] = &ne;
                         queue.push(&nv);
                     }
                 }
@@ -323,12 +330,12 @@ namespace sgl {
 
             Flow df = Edge::ValueType::maxFlow();
             if (pred[target.flags.id] != nullptr) {
-                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from]) {
+                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from()]) {
                     df = std::min(df, e->value.capacity() - e->value.flow());
                 }
-                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from]) {
+                for (Edge* e = pred[target.flags.id]; e != nullptr; e = pred[e->from()]) {
                     e->value.flow(e->value.flow() + df);
-                    e->reverse->value.flow(e->value.flow() - df);
+                    e->value.reverse()->value.flow(e->value.reverse()->value.flow() - df);
                 }
                 flow += df;
             } else {

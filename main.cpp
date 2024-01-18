@@ -29,6 +29,8 @@ int main(int argc, char *argv[]) {
 
     using FV = sgl::ValueFlow<int, int>;
     using FE = sgl::Edge<int, FV>;
+    using VEF = sgl::VectorEdgeVertex<char, sgl::VisitIntIDFlag, FE>;
+    using DFG = sgl::RandomAccessEdgeGraph<VEF, FE, true>;
 
     static_assert(sgl::VertexVisit<VV>);
     static_assert(sgl::VertexID<VV>);
@@ -179,6 +181,45 @@ int main(int argc, char *argv[]) {
     }
 
     printResult(correctCount == 8);
+
+    std::cout << "Test of floydWarshall()" << std::endl;
+    correctCount = 0;
+
+    draeg.reset();
+    std::vector<std::vector<int>> fwCorrect = {
+            { 0,  8,  9,  5,  7},
+            {11,  0,  1,  2,  4},
+            {11, 19,  0, 16,  4},
+            { 9,  3,  4,  0,  2},
+            { 7, 15,  6, 12,  0}
+    };
+
+    auto fwResult = sgl::floydWarshall(draeg);
+
+    for (i = 0; i < fwResult.size(); ++i) {
+        for (size_t j = 0; j < fwResult[i].size(); ++j) {
+            if (std::get<0>(fwResult[i][j]) == fwCorrect[i][j]) {
+                correctCount++;
+            }
+        }
+    }
+
+    printResult(correctCount == 25);
+
+    std::cout << "Test of edmondsKarp()" << std::endl;
+    correctCount = 0;
+    std::vector<char> ekChars = {'a', 'b', 'c', 'd', 'e', 'f', 'g'};
+    std::vector<std::tuple<int, int, int>> ekEdges = {
+            {0, 1, 3}, {0, 3, 3}, {1, 2, 4}, {2, 0, 3}, {2, 3, 1}, {2, 4, 2},
+            {3, 4, 2}, {3, 5, 6}, {4, 1, 1}, {4, 6, 1}, {5, 6, 9}
+    };
+    DFG dfg = {};
+    dfg.addVertices(ekChars.begin(), ekChars.end());
+    FV::insertFlowEdges(dfg, ekEdges.begin(), ekEdges.end());
+
+    int flow = sgl::edmondsKarp<DFG, VEF, int>(dfg, *dfg.vertexBegin(), dfg[6]);
+
+    printResult(flow == 5);
 
     return 0;
 }
